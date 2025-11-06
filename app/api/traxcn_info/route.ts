@@ -59,9 +59,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Normalize domain if needed
+    const { fetchCompanyInfo, normalizeDomain } = await import('@/lib/traxcnApi');
+    const normalizedDomain = normalizeDomain(companyDomain);
+    
     // Fetch company info using shared function
-    const { fetchCompanyInfo } = await import('@/lib/traxcnApi');
-    const results = await fetchCompanyInfo(companyDomain);
+    const results = await fetchCompanyInfo(normalizedDomain);
     
     console.log("✅ Company Details fetched");
     console.log("✅ Funding Rounds fetched");
@@ -91,6 +94,59 @@ export async function GET(req: NextRequest) {
 //  return NextResponse.json({ source: 'combined', geminiResponse });
 
   } catch (error: unknown) {
+    // Handle Tracxn API errors specifically
+    const { isTracxnApiError } = await import('@/lib/traxcnApi');
+    
+    // Check if it's a Tracxn API error
+    if (isTracxnApiError(error)) {
+      const tracxnError = error;
+      const statusCode = tracxnError.statusCode;
+      
+      // Handle rate limit errors (429) specially
+      if (statusCode === 429) {
+        return NextResponse.json(
+          { 
+            error: 'Tracxn API Rate Limit Exceeded',
+            message: tracxnError.message,
+          },
+          { status: 429 }
+        );
+      }
+      
+      // Handle authentication errors
+      if (statusCode === 401 || statusCode === 403) {
+        return NextResponse.json(
+          { 
+            error: 'Tracxn API Authentication Error',
+            message: tracxnError.message,
+          },
+          { status: statusCode }
+        );
+      }
+      
+      // Handle bad request errors
+      if (statusCode === 400) {
+        return NextResponse.json(
+          { 
+            error: 'Invalid Request',
+            message: tracxnError.message,
+          },
+          { status: 400 }
+        );
+      }
+      
+      // Handle other API errors
+      return NextResponse.json(
+        { 
+          error: 'Tracxn API Error',
+          message: tracxnError.message,
+          statusCode,
+        },
+        { status: statusCode >= 500 ? 502 : statusCode } // Map 500+ to 502 Bad Gateway
+      );
+    }
+    
+    // Handle other errors
     const errorMsg = error instanceof Error ? error.message : String(error);
     console.error("❌ Error fetching company pipeline:", errorMsg);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
