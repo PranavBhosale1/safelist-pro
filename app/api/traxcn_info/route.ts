@@ -1,13 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
-import axios from "axios";
+import { getServerSession } from 'next-auth';
+import type { Session } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { checkRateLimit, recordApiCall, type ApiType } from '@/lib/rateLimiter';
 // import { generateResponseFromTranscript } from "@/lib/gemini"; // Removed unused
-const TOKEN = process.env.TRACXN_PLAYGROUND_TOKEN;
-const HEADERS = {
-  accesstoken: TOKEN,
-  "Content-Type": "application/json"
+
+const RATE_LIMITS = {
+  standard: { hourly: 100, daily: 1000 },
+  key_metrics: { hourly: 10, daily: 100 },
 };
 
+// This endpoint uses Standard API (makes multiple external API calls)
+const API_TYPE: ApiType = 'standard';
+
 export async function GET(req: NextRequest) {
+  // Check authentication
+  const session = (await getServerSession(authOptions)) as Session | null;
+  if (!session || !session.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userId = session.user.id as string;
+
+  // Check rate limits
+  const rateLimitResult = await checkRateLimit(userId, API_TYPE);
+  if (!rateLimitResult.allowed) {
+    const headers: Record<string, string> = {
+      'X-RateLimit-Limit-Hourly': RATE_LIMITS[API_TYPE].hourly.toString(),
+      'X-RateLimit-Limit-Daily': RATE_LIMITS[API_TYPE].daily.toString(),
+      'X-RateLimit-Remaining-Hourly': rateLimitResult.remainingHourly.toString(),
+      'X-RateLimit-Remaining-Daily': rateLimitResult.remainingDaily.toString(),
+    };
+    
+    if (rateLimitResult.retryAfter) {
+      headers['Retry-After'] = rateLimitResult.retryAfter.toString();
+    }
+
+    return NextResponse.json(
+      { 
+        error: 'Rate limit exceeded',
+        message: `You have exceeded your ${API_TYPE} API rate limit. Please try again later.`,
+        retryAfter: rateLimitResult.retryAfter,
+      },
+      { 
+        status: 429,
+        headers,
+      }
+    );
+  }
+
   const companyDomain = req.nextUrl.searchParams.get("CompanyName");
 
   console.log("📥 Received query param:", companyDomain);
@@ -18,87 +59,29 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // 1️⃣ Fetch Company Details
-    console.log("📡 Fetching company details...");
-    const detailsRes = await axios.post(
-      "https://platform.tracxn.com/api/2.2/playground/companies",
-      {
-        filter: { domain: [companyDomain] }
-      },
-      { headers: HEADERS }
-    );
-     const companyDetails = detailsRes.data;
+    // Fetch company info using shared function
+    const { fetchCompanyInfo } = await import('@/lib/traxcnApi');
+    const results = await fetchCompanyInfo(companyDomain);
+    
+    console.log("✅ Company Details fetched");
+    console.log("✅ Funding Rounds fetched");
+    console.log("✅ Investors fetched");
 
-    // Remove `businessModelList` from each company in the array
-    console.log("✅ Company Details:", JSON.stringify(companyDetails, null, 2));
+    // Record successful API call
+    await recordApiCall(userId, API_TYPE);
 
-    // 2️⃣ Funding Rounds
-    console.log("📡 Fetching funding rounds...");
-    const transactionsRes = await axios.post(
-      "https://platform.tracxn.com/api/2.2/playground/transactions",
+    return NextResponse.json(
+      { source: 'combined', results },
       {
-        filter: { domain: [companyDomain] },
-        sort: [{ sortField: "transactionFundingRoundAmount" }]
-      },
-      { headers: HEADERS }
-    );
-    const fundingRounds = transactionsRes.data;
-    console.log("✅ Funding Rounds:", JSON.stringify(fundingRounds, null, 2));
-
-    // 3️⃣ Investor Pipeline
-    console.log("📡 Fetching investors...");
-    const investorsRes = await axios.post(
-      "https://platform.tracxn.com/api/2.2/playground/investors",
-      {
-        filter: {
-          investorCountry: ["India"],
-          investorType: ["Institutional Investors"],
-          domain: [companyDomain]
+        status: 200,
+        headers: {
+          'X-RateLimit-Limit-Hourly': RATE_LIMITS[API_TYPE].hourly.toString(),
+          'X-RateLimit-Limit-Daily': RATE_LIMITS[API_TYPE].daily.toString(),
+          'X-RateLimit-Remaining-Hourly': (rateLimitResult.remainingHourly - 1).toString(),
+          'X-RateLimit-Remaining-Daily': (rateLimitResult.remainingDaily - 1).toString(),
         },
-        size: 10
-      },
-      { headers: HEADERS }
+      }
     );
-    const investors = investorsRes.data;
-    console.log("✅ Investors:", JSON.stringify(investors, null, 2));
-
-    // 4️⃣ Acquisitions (note: ensure you're calling actual Tracxn endpoint, not your internal API)
-   /* console.log("📡 Fetching acquisitions...");
-    const acquisitionsRes = await axios.post(
-      "https://platform.tracxn.com/api/2.2/playground/acquisitiontransactions", // <- corrected endpoint
-      {
-        filter: {
-          acquisitionType: ["Business Acquisition"],
-          acquirerCountry: ["India"],
-          domain: [companyDomain]
-        },
-        sort: { announcementDate: "desc" },
-        size: 10
-      },
-      { headers: HEADERS }
-    );
-    const acquisitions = acquisitionsRes.data;
-    console.log("✅ Acquisitions:", JSON.stringify(acquisitions, null, 2));
-*/
-    // ✅ Combine and return results
-    const results = {
-      companyDetails,
-      fundingRounds,
-      investors,
-    };
-
-results.companyDetails.result.forEach((company: unknown) => {
-  if (typeof company === 'object' && company !== null) {
-    delete (company as Record<string, unknown>).businessModelList;
-    delete (company as Record<string, unknown>).tracxnUrl;
-    delete (company as Record<string, unknown>).practiceAreaList;
-    delete (company as Record<string, unknown>).specialFlagList;
-    delete (company as Record<string, unknown>).achievements;
-    delete (company as Record<string, unknown>).sectorList;
-  }
-});
-
- return NextResponse.json({ source: 'combined', results });
 
    // console.log("🎉 Final Combined Result:", JSON.stringify(result, null, 2));
 
