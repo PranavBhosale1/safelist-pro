@@ -103,7 +103,7 @@ export default function CompanyInfographic({
   showRateLimitNotice = true,
 }: CompanyInfographicProps) {
   const [companies, setCompanies] = useState<CompanyData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Set to false since active tracking is disabled
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [trackedCompanies, setTrackedCompanies] = useState<string[]>([]);
   const [showDialog, setShowDialog] = useState(false);
@@ -232,133 +232,134 @@ export default function CompanyInfographic({
   }, [trackedCompanies]);
 
   // Fetch companies data with rate limiting
-  useEffect(() => {
-    if (trackedCompanies.length === 0) return;
-    
-    const fetchCompanies = async () => {
-      setLoading(true);
-      
-      // Process companies sequentially with delays to avoid rate limiting
-      const fetchedCompanies: CompanyData[] = [];
-      
-      for (let i = 0; i < trackedCompanies.length; i++) {
-        const companyName = trackedCompanies[i];
-        try {
-          // Step 1: Search for company
-          let searchRes = await fetch(`/api/traxcn_card?name=${encodeURIComponent(companyName)}`);
-          
-          if (!searchRes.ok) {
-            // If it's a 404, the company wasn't found - that's okay, skip it
-            if (searchRes.status === 404) {
-              console.log(`Company "${companyName}" not found, skipping...`);
-              continue;
-            }
-            // Handle rate limiting (429) - very restrictive, so wait longer
-            if (searchRes.status === 429) {
-              console.warn(`Rate limited for ${companyName}. API rate limits are too restrictive.`);
-              // Wait longer before retry
-              await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-              // Retry once
-              searchRes = await fetch(`/api/traxcn_card?name=${encodeURIComponent(companyName)}`);
-              if (!searchRes.ok || searchRes.status === 429) {
-                console.warn(`Retry failed for ${companyName} due to rate limits, skipping...`);
-                continue;
-              }
-            } else {
-              // For other errors, log and skip
-              console.warn(`Error fetching ${companyName}: ${searchRes.status} ${searchRes.statusText}`);
-              continue;
-            }
-          }
-          
-          let searchData: CompanyInfo[] | { error?: string };
-          try {
-            searchData = await searchRes.json();
-          } catch (jsonError) {
-            console.error(`Failed to parse JSON for ${companyName}:`, jsonError);
-            continue;
-          }
-          
-          // Check if response contains an error
-          if (searchData && typeof searchData === 'object' && 'error' in searchData) {
-            console.log(`API returned error for "${companyName}": ${searchData.error}`);
-            continue;
-          }
-          
-          // Validate it's an array with data
-          if (!Array.isArray(searchData) || searchData.length === 0) {
-            console.log(`No results found for "${companyName}"`);
-            continue;
-          }
+  // DISABLED: Active company tracking is disabled
+  // useEffect(() => {
+  //   if (trackedCompanies.length === 0) return;
+  //   
+  //   const fetchCompanies = async () => {
+  //     setLoading(true);
+  //     
+  //     // Process companies sequentially with delays to avoid rate limiting
+  //     const fetchedCompanies: CompanyData[] = [];
+  //     
+  //     for (let i = 0; i < trackedCompanies.length; i++) {
+  //       const companyName = trackedCompanies[i];
+  //       try {
+  //         // Step 1: Search for company
+  //         let searchRes = await fetch(`/api/traxcn_card?name=${encodeURIComponent(companyName)}`);
+  //         
+  //         if (!searchRes.ok) {
+  //           // If it's a 404, the company wasn't found - that's okay, skip it
+  //           if (searchRes.status === 404) {
+  //             console.log(`Company "${companyName}" not found, skipping...`);
+  //             continue;
+  //           }
+  //           // Handle rate limiting (429) - very restrictive, so wait longer
+  //           if (searchRes.status === 429) {
+  //             console.warn(`Rate limited for ${companyName}. API rate limits are too restrictive.`);
+  //             // Wait longer before retry
+  //             await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+  //             // Retry once
+  //             searchRes = await fetch(`/api/traxcn_card?name=${encodeURIComponent(companyName)}`);
+  //             if (!searchRes.ok || searchRes.status === 429) {
+  //               console.warn(`Retry failed for ${companyName} due to rate limits, skipping...`);
+  //               continue;
+  //             }
+  //           } else {
+  //             // For other errors, log and skip
+  //             console.warn(`Error fetching ${companyName}: ${searchRes.status} ${searchRes.statusText}`);
+  //             continue;
+  //           }
+  //         }
+  //         
+  //         let searchData: CompanyInfo[] | { error?: string };
+  //         try {
+  //           searchData = await searchRes.json();
+  //         } catch (jsonError) {
+  //           console.error(`Failed to parse JSON for ${companyName}:`, jsonError);
+  //           continue;
+  //         }
+  //         
+  //         // Check if response contains an error
+  //         if (searchData && typeof searchData === 'object' && 'error' in searchData) {
+  //           console.log(`API returned error for "${companyName}": ${searchData.error}`);
+  //           continue;
+  //         }
+  //         
+  //         // Validate it's an array with data
+  //         if (!Array.isArray(searchData) || searchData.length === 0) {
+  //           console.log(`No results found for "${companyName}"`);
+  //           continue;
+  //         }
 
-          // Now TypeScript knows searchData is an array
-          const companyInfoArray: CompanyInfo[] = searchData;
-          const companyInfo = companyInfoArray[0];
-          
-          // Validate company info has required fields
-          if (!companyInfo.name) {
-            console.warn(`Invalid company data for ${companyName}, skipping...`);
-            continue;
-          }
-          
-          // Step 2: Get detailed info (optional - don't fail if this doesn't work)
-          let companyData: CompanyData = {
-            company: companyInfo,
-            status: 'loaded' as const,
-          };
+  //         // Now TypeScript knows searchData is an array
+  //         const companyInfoArray: CompanyInfo[] = searchData;
+  //         const companyInfo = companyInfoArray[0];
+  //         
+  //         // Validate company info has required fields
+  //         if (!companyInfo.name) {
+  //           console.warn(`Invalid company data for ${companyName}, skipping...`);
+  //           continue;
+  //         }
+  //         
+  //         // Step 2: Get detailed info (optional - don't fail if this doesn't work)
+  //         let companyData: CompanyData = {
+  //           company: companyInfo,
+  //           status: 'loaded' as const,
+  //         };
 
-          if (companyInfo.url) {
-            try {
-              // Extract domain from URL (remove protocol, www, and path)
-              let domain = companyInfo.url
-                .replace(/^https?:\/\//, '')
-                .replace(/^www\./, '')
-                .split('/')[0]
-                .split('?')[0]; // Remove query params
-              
-              if (domain) {
-                const detailsRes = await fetch(`/api/traxcn_info?CompanyName=${encodeURIComponent(domain)}`);
-                
-                if (detailsRes.ok) {
-                  try {
-                    const detailsData = await detailsRes.json();
-                    companyData = {
-                      company: companyInfo,
-                      details: detailsData?.results?.companyDetails?.result?.[0],
-                      fundingRounds: detailsData?.results?.fundingRounds?.result || [],
-                      status: 'loaded' as const,
-                    };
-                  } catch (jsonError) {
-                    console.warn(`Failed to parse details JSON for ${companyName}:`, jsonError);
-                    // Continue with basic info
-                  }
-                }
-              }
-            } catch (detailsError) {
-              // If details fetch fails, still use basic company info
-              console.warn(`Failed to fetch details for ${companyName}:`, detailsError);
-            }
-          }
+  //         if (companyInfo.url) {
+  //           try {
+  //             // Extract domain from URL (remove protocol, www, and path)
+  //             let domain = companyInfo.url
+  //               .replace(/^https?:\/\//, '')
+  //               .replace(/^www\./, '')
+  //               .split('/')[0]
+  //               .split('?')[0]; // Remove query params
+  //             
+  //             if (domain) {
+  //               const detailsRes = await fetch(`/api/traxcn_info?CompanyName=${encodeURIComponent(domain)}`);
+  //               
+  //               if (detailsRes.ok) {
+  //                 try {
+  //                   const detailsData = await detailsRes.json();
+  //                   companyData = {
+  //                     company: companyInfo,
+  //                     details: detailsData?.results?.companyDetails?.result?.[0],
+  //                     fundingRounds: detailsData?.results?.fundingRounds?.result || [],
+  //                     status: 'loaded' as const,
+  //                   };
+  //                 } catch (jsonError) {
+  //                   console.warn(`Failed to parse details JSON for ${companyName}:`, jsonError);
+  //                   // Continue with basic info
+  //                 }
+  //               }
+  //             }
+  //           } catch (detailsError) {
+  //             // If details fetch fails, still use basic company info
+  //             console.warn(`Failed to fetch details for ${companyName}:`, detailsError);
+  //           }
+  //         }
 
-          fetchedCompanies.push(companyData);
-          
-          // Add significant delay between requests due to very restrictive rate limits
-          // Only fetch 1-2 companies at a time to avoid hitting limits
-          if (i < trackedCompanies.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second delay between requests
-          }
-        } catch (error) {
-          console.error(`Unexpected error fetching ${companyName}:`, error);
-          // Continue to next company
-        }
-      }
+  //         fetchedCompanies.push(companyData);
+  //         
+  //         // Add significant delay between requests due to very restrictive rate limits
+  //         // Only fetch 1-2 companies at a time to avoid hitting limits
+  //         if (i < trackedCompanies.length - 1) {
+  //           await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second delay between requests
+  //         }
+  //       } catch (error) {
+  //         console.error(`Unexpected error fetching ${companyName}:`, error);
+  //         // Continue to next company
+  //       }
+  //     }
 
-      setCompanies(fetchedCompanies);
-      setLoading(false);
-    };
+  //     setCompanies(fetchedCompanies);
+  //     setLoading(false);
+  //   };
 
-    fetchCompanies();
-  }, [trackedCompanies]);
+  //   fetchCompanies();
+  // }, [trackedCompanies]);
 
   // Debounced search effect
   useEffect(() => {
