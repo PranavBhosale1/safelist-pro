@@ -1,6 +1,6 @@
 "use client";
 
-
+import type { KeyboardEvent, MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
@@ -22,85 +22,104 @@ interface ShareInfoCardProps {
 
 export function ShareInfoCard({ share, onBuy, onSell }: ShareInfoCardProps) {
   const router = useRouter();
-  const handleClick = (e: React.MouseEvent, action: "buy" | "sell") => {
-    e.preventDefault(); // prevent navigation from Link
-    e.stopPropagation();
+  const handleActionClick = (event: MouseEvent<HTMLButtonElement>, action: "buy" | "sell") => {
+    event.preventDefault();
+    event.stopPropagation();
 
     if (action === "buy") {
-      onBuy?.(share); // 👈 Call onBuy with full share
-    } else if (action === "sell") {
-      onSell?.(share); // 👈 Call onSell with full share
+      onBuy?.(share);
+    } else {
+      onSell?.(share);
     }
   };
 
+  const openCompanyDetails = () => {
+    const params = new URLSearchParams({
+      name: share.company_name,
+      location: '',
+      rating: '',
+      url: '',
+      logo: share.image_url || '',
+    }).toString();
+
+    router.push(`/company_info?${params}`);
+  };
+
+  const badgeTone = share.type === "ESOP"
+    ? "border-blue-100 bg-blue-50 text-blue-700"
+    : "border-emerald-100 bg-emerald-50 text-emerald-700";
+
   return (
-   
-      <div className="group p-6 rounded-2xl bg-white shadow border border-green-200 hover:shadow-md hover:border-green-300 transition-all duration-200 cursor-pointer">
-        {/* Header */ }
-        <div className="flex justify-between items-start mb-4 pb-4 border-b border-green-100"
-         onClick={() => {
-          const params = new URLSearchParams({
-            name: share.company_name,
-            location: '', // script.location is not present
-            rating: '',   // script.rating is not present
-            url:  '',
-            logo: share.image_url || '',
-          }).toString();
-          router.push(`/company_info?${params}`);
-         }}
-         >
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-xl bg-green-50 p-1 border border-green-200">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={openCompanyDetails}
+      onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openCompanyDetails();
+        }
+      }}
+      className="group relative flex h-full w-full flex-col gap-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-green-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-200 overflow-hidden"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 ring-1 ring-inset ring-gray-200">
+            {share.image_url ? (
               <img
-                src={ share.image_url }
-                alt={ `${share.company_name} logo` }
-                className="w-full h-full rounded-lg object-cover"
+                src={share.image_url}
+                alt={`${share.company_name} logo`}
+                className="h-8 w-8 object-contain"
               />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 group-hover:text-green-700 transition">{ share.company_name }</h2>
-              <p className="text-xs text-gray-500">Company Equity</p>
-            </div>
+            ) : (
+              <span className="text-sm font-semibold uppercase text-gray-500">
+                {share.company_name.slice(0, 2)}
+              </span>
+            )}
           </div>
-
-          <span className="text-xs px-3 py-1.5 rounded-full bg-green-600 text-white font-semibold">
-            { share.type }
-          </span>
-        </div>
-
-        {/* Info */ }
-        <div className="bg-green-50 rounded-xl p-4 mb-4 border border-green-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-600 mb-1">Quantity</p>
-              <p className="text-xl font-bold text-green-700">{ share.quantity }</p>
-            </div>
-            <div className="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-semibold text-gray-900 transition-colors group-hover:text-green-700">
+              {share.company_name}
+            </h2>
+            <p className="text-xs text-gray-500">Company equity</p>
           </div>
         </div>
 
-        {/* Action Buttons */ }
-        <div className="flex gap-3">
-          <Button
-            onClick={ (e) => handleClick(e, "buy") }
-            className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5"
-          >
-            Buy
-          </Button>
+        <span
+          className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold ${badgeTone}`}
+        >
+          {share.type}
+        </span>
+      </div>
 
-          <Button
-            onClick={ (e) => handleClick(e, "sell") }
-            variant="outline"
-            className="flex-1 font-semibold py-2.5"
-          >
-            Sell
-          </Button>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/80 p-5">
+          <p className="text-xs uppercase tracking-wide text-gray-400">Quantity</p>
+          <p className="mt-2 text-2xl font-semibold text-gray-900">
+            {share.quantity.toLocaleString()}
+          </p>
         </div>
       </div>
-    
+
+      <div className="mt-auto flex gap-3 pt-2">
+        <Button
+          onClick={(event) => handleActionClick(event, "buy")}
+          variant="primary"
+          size="sm"
+          className="flex-1"
+        >
+          Buy
+        </Button>
+
+        <Button
+          onClick={(event) => handleActionClick(event, "sell")}
+          variant="outline"
+          size="sm"
+          className="flex-1"
+        >
+          Sell
+        </Button>
+      </div>
+    </div>
   );
 }

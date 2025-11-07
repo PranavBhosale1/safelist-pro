@@ -34,6 +34,7 @@ export default function ChatLayout() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [showChatList, setShowChatList] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   const userId = session?.user?.id;
   useEffect(() => {
@@ -142,10 +143,10 @@ export default function ChatLayout() {
   return (
     <div className="flex min-h-screen bg-white text-gray-900">
       {/* Sidebar */}
-      <Sidebar />
+      <Sidebar collapsed={sidebarCollapsed} onCollapsedChange={setSidebarCollapsed} />
 
       {/* Main content */}
-      <div className="z-10 flex-1 flex flex-col ml-0 md:ml-64 transition-all">
+      <div className={`z-10 flex-1 flex flex-col transition-all duration-200 ease-in-out ${sidebarCollapsed ? 'ml-0 md:ml-20' : 'ml-0 md:ml-64'}`}>
         <div className="flex h-screen overflow-hidden">
           {/* Left Sidebar */}
           <aside className={cn(

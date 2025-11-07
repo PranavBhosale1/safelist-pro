@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { motion, LazyMotion, domAnimation, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight, Shield, Zap, BarChart2, FileText, UserIcon, Menu, X, Lock, MessageSquare, TrendingUp, CheckCircle2, Star } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import TaxCalculation from "@/components/TaxCalculation";
 import { HorizontalFlow } from "@/components/magicui/horizontal-flow";
 import { MagicCard } from "@/components/magicui/magic-card";
@@ -14,6 +16,12 @@ import Marquee from "@/components/magicui/marquee";
 import { SparklesText } from "@/components/magicui/sparkles-text";
 
 export default function HomePage() {
+  const router = useRouter();
+  const { status } = useSession();
+
+  useEffect(() => {
+    if (status === 'authenticated') router.replace('/dashboard');
+  }, [status, router]);
   const heroRef = useRef(null);
   const { scrollY } = useScroll();
   const [isMenuOpen, setIsMenuOpen] = useState(false);

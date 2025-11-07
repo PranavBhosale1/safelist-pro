@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from 'framer-motion';
+import { Search } from 'lucide-react';
 
 type Company = {
   name: string;
@@ -21,8 +22,10 @@ export default function SearchCompanyPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -61,24 +64,76 @@ export default function SearchCompanyPage() {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
+        setIsOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (isOpen) {
+      // Focus input when expanding
+      const t = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen]);
+
   return (
     <div className="relative w-full" ref={containerRef}>
-      <Input
-        type="text"
-        placeholder="Search for a company..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="text-black w-72"
-        onFocus={() => {
-          if (results.length > 0 || error || loading) setShowDropdown(true);
-        }}
-      />
+      <div className="flex items-center">
+        {/* Layout: icon stays on the right (near profile), input expands to the left on hover */}
+        <div
+          className="flex items-center flex-row-reverse"
+          onMouseEnter={() => setIsOpen(true)}
+          onMouseLeave={() => { setIsOpen(false); setShowDropdown(false); }}
+        >
+          {!isOpen && (
+            <motion.button
+              type="button"
+              aria-label="Search"
+              whileTap={{ scale: 0.95 }}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border-0 text-gray-800 hover:bg-gray-100 transition-colors shadow-md hover:shadow-lg"
+            >
+              <Search className="h-5 w-5" />
+            </motion.button>
+          )}
+
+          <AnimatePresence initial={false}>
+            {isOpen && (
+              <motion.div
+                key="search-input-left"
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 320, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+                className="overflow-hidden mr-2"
+              >
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    ref={inputRef}
+                    type="text"
+                    placeholder="Search for a company..."
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    className="text-black pl-9 !rounded-full !border-0 !border-none focus:!ring-0 focus:!border-0 shadow-none"
+                    onFocus={() => {
+                      if (results.length > 0 || error || loading) setShowDropdown(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if ((e as React.KeyboardEvent<HTMLInputElement>).key === 'Escape') {
+                        setIsOpen(false);
+                        setShowDropdown(false);
+                      }
+                    }}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
 
       <AnimatePresence>
         {showDropdown && (loading || error || results.length > 0) && (
@@ -92,7 +147,7 @@ export default function SearchCompanyPage() {
             {loading && <div className="text-green-600 font-medium">Searching...</div>}
             {error && <div className="text-red-600 mb-4">{error}</div>}
 
-            <div className="grid grid-cols-1 gap-4 max-h-80 overflow-y-auto">
+            <div className="grid grid-cols-1 gap-4 max-h-[28rem] lg:max-h-[36rem] overflow-y-auto">
               <AnimatePresence>
                 {results.map((company) => (
                   <Link

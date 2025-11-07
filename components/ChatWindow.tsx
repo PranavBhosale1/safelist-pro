@@ -10,6 +10,7 @@ type Message = {
   id: string;
   content: string;
   sender_id: string;
+  created_at?: string;
   // Add other fields as needed
 };
 
@@ -24,6 +25,56 @@ export default function ChatWindow({ chatId, doc_url, scriptId }: ChatWindowProp
   const { data: session } = useSession();
 
   const [input, setInput] = useState("");
+
+  // Format timestamp for display
+  const formatTimestamp = (timestamp?: string) => {
+    if (!timestamp) return '';
+    
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / 60000);
+    const diffInHours = Math.floor(diffInMs / 3600000);
+    const diffInDays = Math.floor(diffInMs / 86400000);
+
+    // Today - show time only
+    if (diffInDays === 0) {
+      return date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+    }
+    
+    // Yesterday
+    if (diffInDays === 1) {
+      return `Yesterday ${date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      })}`;
+    }
+    
+    // Within a week - show day and time
+    if (diffInDays < 7) {
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'short',
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+    }
+    
+    // Older - show full date and time
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
 
   // Fetch messages and subscribe to realtime updates
   useEffect(() => {
@@ -81,20 +132,29 @@ export default function ChatWindow({ chatId, doc_url, scriptId }: ChatWindowProp
         ) : (
           <AnimatePresence initial={false}>
             {messages.map((msg) => (
-              <motion.div
+              <div
                 key={msg.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ duration: 0.25 }}
-                className={`max-w-[50%] break-words px-4 py-2 mb-1 rounded-2xl shadow-md text-base relative
-                  ${msg.sender_id === session?.user?.id
-                    ? "ml-auto bg-gradient-to-br from-green-600 to-green-700 text-white"
-                    : "mr-auto bg-green-50 text-gray-900 border-2 border-green-200"}
-                `}
+                className={`flex flex-col mb-3 ${msg.sender_id === session?.user?.id ? 'items-end' : 'items-start'}`}
               >
-                {msg.content}
-              </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ duration: 0.25 }}
+                  className={`max-w-[50%] break-words px-4 py-2 rounded-2xl shadow-md text-base relative
+                    ${msg.sender_id === session?.user?.id
+                      ? "bg-gradient-to-br from-green-600 to-green-700 text-white"
+                      : "bg-green-50 text-gray-900 border-2 border-green-200"}
+                  `}
+                >
+                  {msg.content}
+                </motion.div>
+                {msg.created_at && (
+                  <span className={`text-xs mt-1 px-2 ${msg.sender_id === session?.user?.id ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {formatTimestamp(msg.created_at)}
+                  </span>
+                )}
+              </div>
             ))}
           </AnimatePresence>
         )}

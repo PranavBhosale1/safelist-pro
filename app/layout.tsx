@@ -4,7 +4,6 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Providers } from './providers';
 import { Toaster } from 'sonner';
-import Head from 'next/head';
 import { Suspense } from 'react'
 const inter = Inter({ subsets: ['latin'] });
 
@@ -39,7 +38,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <Head>
+      <head>
         {/* ✅ Favicon */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -57,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="twitter:title" content="Safelist" />
         <meta name="twitter:description" content="A trusted peer-to-peer marketplace to securely trade pre-IPO shares." />
         <meta name="twitter:image" content="/og-image.png" />
-      </Head>
+      </head>
 
       <body className={inter.className}>
          <Suspense fallback={<div>Loading...</div>}>

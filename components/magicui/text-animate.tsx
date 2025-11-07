@@ -2,11 +2,11 @@
 
 import { cn } from "@/utils/cn";
 import { AnimatePresence, motion, MotionProps } from "framer-motion";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 type TextAnimateProps = {
   text: string;
-  el?: keyof JSX.IntrinsicElements;
+  el?: React.ElementType;
   className?: string;
   delay?: number;
 } & MotionProps;

@@ -9,6 +9,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, TrendingDown, DollarSign, Users, Building2, Star, ArrowUpRight, ArrowDownRight, Plus, Check, X, Search } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/utils/cn';
+
+type CompanyInfographicProps = {
+  className?: string;
+  title?: string;
+  subtitle?: string;
+  showHeader?: boolean;
+  showRateLimitNotice?: boolean;
+};
 
 type CompanyInfo = {
   name: string;
@@ -86,7 +95,13 @@ const SUGGESTED_COMPANIES = [
 
 const STORAGE_KEY = 'tracked_companies';
 
-export default function CompanyInfographic() {
+export default function CompanyInfographic({
+  className,
+  title = 'Company Trends & Insights',
+  subtitle = 'Live data from Tracxn',
+  showHeader = true,
+  showRateLimitNotice = true,
+}: CompanyInfographicProps) {
   const [companies, setCompanies] = useState<CompanyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
@@ -98,6 +113,18 @@ export default function CompanyInfographic() {
   const [verifiedCompanies, setVerifiedCompanies] = useState<CompanyInfo[]>([]);
   const [verifyingCompanies, setVerifyingCompanies] = useState(false);
   const router = useRouter();
+  const containerClasses = cn('space-y-6', className);
+  const trackButton = (
+    <Button
+      onClick={() => setShowDialog(true)}
+      variant="outline"
+      size="sm"
+      className="gap-2 text-sm font-medium"
+    >
+      <Plus className="h-4 w-4" />
+      Manage companies
+    </Button>
+  );
 
   // Load tracked companies from localStorage on mount
   useEffect(() => {
@@ -419,40 +446,45 @@ export default function CompanyInfographic() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Company Trends & Insights</h2>
-              <span className="text-sm text-gray-500">Live data from Tracxn</span>
-            </div>
-            <Button
-              onClick={() => setShowDialog(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Track More Companies
-            </Button>
+      <div className={containerClasses}>
+        {(showHeader || showRateLimitNotice) && (
+          <div className="space-y-3">
+            {showHeader ? (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+                  {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+                </div>
+                {trackButton}
+              </div>
+            ) : (
+              <div className="flex justify-end">{trackButton}</div>
+            )}
+            {showRateLimitNotice && (
+              <div className="flex items-start gap-3 rounded-xl border border-dashed border-amber-200 bg-amber-50/80 p-3">
+                <span className="text-base">⚠️</span>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-amber-900">API rate limits</p>
+                  <p className="text-xs text-amber-700">
+                    Data loads slowly (about five seconds per company). Track up to three companies at a time for reliable results.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <p className="text-sm text-amber-800">
-              <strong>⚠️ API Rate Limits:</strong> API rate limits are extremely restrictive. Data loads slowly (5+ seconds per company). 
-              Only cybersecurity companies are available. We recommend tracking 1-3 companies at a time.
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        )}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[...Array(Math.max(3, trackedCompanies.length || 6))].map((_, i) => (
-            <Card key={i} className="bg-white border-2 border-green-200 animate-pulse">
-              <CardHeader>
-                <div className="h-6 w-3/4 bg-green-100 rounded mb-2" />
-                <div className="h-4 w-1/2 bg-green-50 rounded" />
+            <Card key={i} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm animate-pulse">
+              <CardHeader className="space-y-2 p-0">
+                <div className="h-5 w-3/4 rounded bg-gray-100" />
+                <div className="h-4 w-1/2 rounded bg-gray-100" />
               </CardHeader>
-              <CardContent>
-                <div className="h-32 bg-green-50 rounded-lg mb-4" />
+              <CardContent className="mt-4 space-y-3 p-0">
+                <div className="h-24 rounded-xl bg-gray-50" />
                 <div className="space-y-2">
-                  <div className="h-4 w-full bg-green-50 rounded" />
-                  <div className="h-4 w-2/3 bg-green-50 rounded" />
+                  <div className="h-4 rounded bg-gray-100" />
+                  <div className="h-4 w-2/3 rounded bg-gray-100" />
                 </div>
               </CardContent>
             </Card>
@@ -463,30 +495,35 @@ export default function CompanyInfographic() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Company Trends & Insights</h2>
-            <span className="text-sm text-gray-500">Live data from Tracxn</span>
-          </div>
-          <Button
-            onClick={() => setShowDialog(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Track More Companies
-          </Button>
+    <div className={containerClasses}>
+      {(showHeader || showRateLimitNotice) && (
+        <div className="space-y-3">
+          {showHeader ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+                {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+              </div>
+              {trackButton}
+            </div>
+          ) : (
+            <div className="flex justify-end">{trackButton}</div>
+          )}
+          {showRateLimitNotice && (
+            <div className="flex items-start gap-3 rounded-xl border border-dashed border-amber-200 bg-amber-50/80 p-3">
+              <span className="text-base">⚠️</span>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-amber-900">API rate limits</p>
+                <p className="text-xs text-amber-700">
+                  Data loads slowly (about five seconds per company). Track up to three companies at a time for reliable results.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-          <p className="text-sm text-amber-800">
-            <strong>⚠️ API Rate Limits:</strong> API rate limits are extremely restrictive. Data loads slowly (5+ seconds per company). 
-            Only cybersecurity companies are available. We recommend tracking 1-3 companies at a time.
-          </p>
-        </div>
-      </div>
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {companies.map((companyData, index) => {
           const { company, details, fundingRounds } = companyData;
           const latestFunding = getLatestFunding(fundingRounds);
@@ -499,153 +536,169 @@ export default function CompanyInfographic() {
           return (
             <motion.div
               key={company.name}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
+              transition={{ duration: 0.25, delay: index * 0.05 }}
             >
               <Card
-                className="bg-white border-2 border-green-200 rounded-2xl shadow-lg hover:shadow-xl transition-all cursor-pointer group overflow-hidden"
+                className="group overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-green-200 hover:shadow-md"
                 onClick={() => handleCardClick(company)}
               >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-12 h-12 rounded-xl bg-green-50 border-2 border-green-200 p-1 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                <CardHeader className="border-b border-gray-100 p-0 pb-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-50 ring-1 ring-inset ring-gray-200">
                         {company.logo && !imageErrors.has(company.name) ? (
                           <Image
                             src={company.logo}
                             alt={company.name}
                             width={48}
                             height={48}
-                            className="w-full h-full object-cover rounded-lg"
+                            className="h-8 w-8 object-contain"
                             onError={() => {
-                              setImageErrors(prev => new Set(prev).add(company.name));
+                              setImageErrors((prev) => new Set(prev).add(company.name));
                             }}
                           />
                         ) : (
-                          <Building2 className="w-full h-full text-green-600 p-2" />
+                          <Building2 className="h-5 w-5 text-gray-400" />
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-lg font-bold text-gray-900 group-hover:text-green-700 transition truncate">
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="truncate text-base font-semibold text-gray-900 transition-colors group-hover:text-green-700">
                           {company.name}
                         </CardTitle>
-                        <p className="text-xs text-gray-500 truncate">{company.location || details?.location?.city || 'N/A'}</p>
+                        <p className="truncate text-xs text-gray-500">
+                          {company.location || details?.location?.city || 'Location unavailable'}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-2">
                       {rating && (
-                        <div className="flex items-center gap-1 bg-green-100 px-2 py-1 rounded-full">
-                          <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                          <span className="text-xs font-semibold text-gray-700">{rating}</span>
-                        </div>
+                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                          <Star className="h-3 w-3 fill-emerald-500 text-emerald-500" />
+                          {rating}
+                        </span>
                       )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           removeCompany(company.name);
                         }}
-                        className="p-1.5 hover:bg-red-50 rounded-full transition-colors text-gray-400 hover:text-red-600"
+                        className="rounded-full border border-transparent p-1.5 text-gray-400 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                         title="Remove company"
+                        aria-label={`Remove ${company.name}`}
                       >
-                        <X className="w-4 h-4" />
+                        <X className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-4">
-                  {/* Latest Funding */}
+                <CardContent className="space-y-5 p-0 pt-4">
                   {latestFunding && (
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-green-600" />
-                          <span className="text-xs font-semibold text-gray-700">Latest Funding</span>
+                    <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 text-green-600">
+                            <TrendingUp className="h-4 w-4" />
+                          </span>
+                          <div>
+                            <span className="text-xs font-medium text-gray-600">Latest funding</span>
+                            <div className="mt-1 text-lg font-semibold text-gray-900">
+                              {formatCurrency(latestFunding.amount?.amount, latestFunding.amount?.currency)}
+                            </div>
+                          </div>
                         </div>
-                        <ArrowUpRight className="w-4 h-4 text-green-600" />
+                        <ArrowUpRight className="h-4 w-4 text-green-500" />
                       </div>
-                      <div className="text-xl font-bold text-gray-900">
-                        {formatCurrency(latestFunding.amount?.amount, latestFunding.amount?.currency)}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        {latestFunding.fundingDate?.year || 'Recent'}
+                      <div className="mt-2 text-xs text-gray-500">
+                        {latestFunding.fundingDate?.year || 'Recent activity'}
                       </div>
                     </div>
                   )}
 
-                  {/* Key Metrics Grid */}
                   <div className="grid grid-cols-2 gap-3">
                     {valuation && (
-                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                        <div className="flex items-center gap-1 mb-1">
-                          <DollarSign className="w-3 h-3 text-blue-600" />
-                          <span className="text-xs text-gray-600">Valuation</span>
+                      <div className="rounded-xl border border-gray-100 bg-white p-3">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <DollarSign className="h-3 w-3" />
+                          </span>
+                          <span className="font-medium text-gray-600">Valuation</span>
                         </div>
-                        <div className="text-sm font-bold text-gray-900">
+                        <div className="mt-2 text-sm font-semibold text-gray-900">
                           {formatCurrency(valuation, details?.latestValuation?.amount?.currency)}
                         </div>
                       </div>
                     )}
 
                     {employees && (
-                      <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                        <div className="flex items-center gap-1 mb-1">
-                          <Users className="w-3 h-3 text-purple-600" />
-                          <span className="text-xs text-gray-600">Employees</span>
+                      <div className="rounded-xl border border-gray-100 bg-white p-3">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
+                            <Users className="h-3 w-3" />
+                          </span>
+                          <span className="font-medium text-gray-600">Employees</span>
                         </div>
-                        <div className="text-sm font-bold text-gray-900">
+                        <div className="mt-2 text-sm font-semibold text-gray-900">
                           {employees >= 1000 ? `${(employees / 1000).toFixed(1)}K` : employees}
                         </div>
                       </div>
                     )}
 
                     {revenue && (
-                      <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
-                        <div className="flex items-center gap-1 mb-1">
-                          <TrendingUp className="w-3 h-3 text-orange-600" />
-                          <span className="text-xs text-gray-600">Revenue</span>
+                      <div className="rounded-xl border border-gray-100 bg-white p-3">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                            <TrendingUp className="h-3 w-3" />
+                          </span>
+                          <span className="font-medium text-gray-600">Revenue</span>
                         </div>
-                        <div className="text-sm font-bold text-gray-900">
+                        <div className="mt-2 text-sm font-semibold text-gray-900">
                           {formatCurrency(revenue, details?.latestAnnualRevenue?.amount?.currency)}
                         </div>
                       </div>
                     )}
 
                     {newsDelta !== undefined && (
-                      <div className={`rounded-lg p-3 border ${newsDelta >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                        <div className="flex items-center gap-1 mb-1">
-                          {newsDelta >= 0 ? (
-                            <TrendingUp className="w-3 h-3 text-green-600" />
-                          ) : (
-                            <TrendingDown className="w-3 h-3 text-red-600" />
-                          )}
-                          <span className="text-xs text-gray-600">News</span>
+                      <div className="rounded-xl border border-gray-100 bg-white p-3">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <span
+                            className={cn(
+                              'flex h-7 w-7 items-center justify-center rounded-lg',
+                              newsDelta >= 0 ? 'bg-green-50 text-green-600' : 'bg-rose-50 text-rose-600'
+                            )}
+                          >
+                            {newsDelta >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                          </span>
+                          <span className="font-medium text-gray-600">News momentum</span>
                         </div>
-                        <div className={`text-sm font-bold ${newsDelta >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                          {newsDelta >= 0 ? '+' : ''}{newsDelta}%
+                        <div
+                          className={cn(
+                            'mt-2 text-sm font-semibold',
+                            newsDelta >= 0 ? 'text-green-600' : 'text-rose-600'
+                          )}
+                        >
+                          {newsDelta >= 0 ? '+' : ''}
+                          {newsDelta}%
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Total Funding */}
                   {details?.totalEquityFunding?.amount?.USD?.value && (
-                    <div className="pt-2 border-t border-green-100">
+                    <div className="rounded-xl border border-dashed border-gray-200 bg-white p-3 text-sm text-gray-600">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">Total Equity Funding</span>
-                        <span className="text-sm font-semibold text-gray-900">
+                        <span>Total equity funding</span>
+                        <span className="font-semibold text-gray-900">
                           {formatCurrency(details.totalEquityFunding.amount.USD.value, 'USD')}
                         </span>
                       </div>
                     </div>
                   )}
 
-                  {/* Founded Year */}
                   {details?.foundedYear && (
-                    <div className="text-xs text-gray-500">
-                      Founded {details.foundedYear}
-                    </div>
+                    <p className="text-xs text-gray-500">Founded {details.foundedYear}</p>
                   )}
                 </CardContent>
               </Card>
@@ -654,9 +707,9 @@ export default function CompanyInfographic() {
         })}
       </div>
 
-      {companies.length === 0 && !loading && (
-        <div className="text-center py-12 bg-green-50 rounded-xl border-2 border-green-200">
-          <p className="text-gray-600">No company data available at the moment.</p>
+      {companies.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-12 text-center text-sm text-gray-600">
+          No company data available right now.
         </div>
       )}
 
