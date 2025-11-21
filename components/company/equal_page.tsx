@@ -1,5 +1,5 @@
-// app/company-info/page.tsx (or EqualCompanyPage.tsx)
 "use client";
+// app/company-info/page.tsx (or EqualCompanyPage.tsx)
 export const dynamic = 'force-dynamic';
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -235,35 +235,35 @@ export default function EqualCompanyPage() {
                           <X className="w-6 h-6" />
                         </button>
                         <Button
-                          variant={activeTab === "overview" ? "default" : "outline"}
+                          variant={activeTab === "overview" ? "primary" : "outline"}
                           onClick={() => { setActiveTab("overview"); setShowMobileTabs(false); }}
                           className="text-lg px-6 py-2 rounded-lg font-semibold"
                         >
                           Overview
                         </Button>
                         <Button
-                          variant={activeTab === "funding" ? "default" : "outline"}
+                          variant={activeTab === "funding" ? "primary" : "outline"}
                           onClick={() => { setActiveTab("funding"); setShowMobileTabs(false); }}
                           className="text-lg px-6 py-2 rounded-lg font-semibold"
                         >
                           Funding
                         </Button>
                         <Button
-                          variant={activeTab === "investor" ? "default" : "outline"}
+                          variant={activeTab === "investor" ? "primary" : "outline"}
                           onClick={() => { setActiveTab("investor"); setShowMobileTabs(false); }}
                           className="text-lg px-6 py-2 rounded-lg font-semibold"
                         >
                           Investor
                         </Button>
                         <Button
-                          variant={activeTab === "contact" ? "default" : "outline"}
+                          variant={activeTab === "contact" ? "primary" : "outline"}
                           onClick={() => { setActiveTab("contact"); setShowMobileTabs(false); }}
                           className="text-lg px-6 py-2 rounded-lg font-semibold"
                         >
                           Contact
                         </Button>
                         <Button
-                          variant={activeTab === "insights" ? "default" : "outline"}
+                          variant={activeTab === "insights" ? "primary" : "outline"}
                           onClick={() => { setActiveTab("insights"); setShowMobileTabs(false); }}
                           className="text-lg px-6 py-2 rounded-lg font-semibold"
                         >
@@ -275,35 +275,35 @@ export default function EqualCompanyPage() {
                 </div>
                 <div className="hidden md:flex gap-4 mb-4">
                   <Button
-                    variant={activeTab === "overview" ? "default" : "outline"}
+                variant={activeTab === "overview" ? "primary" : "outline"}
                     onClick={() => setActiveTab("overview")}
                     className="text-lg px-6 py-2 rounded-lg font-semibold"
                   >
                     Overview
                   </Button>
                   <Button
-                    variant={activeTab === "funding" ? "default" : "outline"}
+                    variant={activeTab === "funding" ? "primary" : "outline"}
                     onClick={() => setActiveTab("funding")}
                     className="text-lg px-6 py-2 rounded-lg font-semibold"
                   >
                     Funding
                   </Button>
                   <Button
-                    variant={activeTab === "investor" ? "default" : "outline"}
+                    variant={activeTab === "investor" ? "primary" : "outline"}
                     onClick={() => setActiveTab("investor")}
                     className="text-lg px-6 py-2 rounded-lg font-semibold"
                   >
                     Investor
                   </Button>
                   <Button
-                    variant={activeTab === "contact" ? "default" : "outline"}
+                    variant={activeTab === "contact" ? "primary" : "outline"}
                     onClick={() => setActiveTab("contact")}
                     className="text-lg px-6 py-2 rounded-lg font-semibold"
                   >
                     Contact
                   </Button>
                   <Button
-                    variant={activeTab === "insights" ? "default" : "outline"}
+                    variant={activeTab === "insights" ? "primary" : "outline"}
                     onClick={() => setActiveTab("insights")}
                     className="text-lg px-6 py-2 rounded-lg font-semibold"
                   >
