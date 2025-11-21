@@ -7,7 +7,6 @@ import React, { useRef } from "react";
 export const MagicCard = ({
   children,
   className,
-  size = 250,
 }: {
   children?: React.ReactNode;
   className?: string;

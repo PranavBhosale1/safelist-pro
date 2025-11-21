@@ -27,7 +27,6 @@ export const BentoCard = ({
   className,
   description,
   header,
-  icon,
 }: {
   className?: string;
   name?: string;

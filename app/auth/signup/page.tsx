@@ -29,7 +29,7 @@ export default function SignUpPage() {
   
   // Biometric eKYC states
   const [biometricType, setBiometricType] = useState<'fingerprint' | 'iris' | null>(null);
-  const [biometricCaptured, setBiometricCaptured] = useState(false);
+ 
   const [biometricVerified, setBiometricVerified] = useState(false);
   
   const [loading, setLoading] = useState(false);
@@ -119,7 +119,7 @@ export default function SignUpPage() {
 
   const handleBiometricCapture = (type: 'fingerprint' | 'iris') => {
     setBiometricType(type);
-    setBiometricCaptured(true);
+    
     setError('');
     // Simulate biometric capture
     setTimeout(() => {
@@ -134,7 +134,7 @@ export default function SignUpPage() {
     setAadhaarNumber('');
     setOtpVerified(false);
     setBiometricType(null);
-    setBiometricCaptured(false);
+  
     setBiometricVerified(false);
   };
 

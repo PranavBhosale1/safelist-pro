@@ -12,7 +12,6 @@ export function AnimatedBeam({
   reverse = false,
   duration = 5,
   delay = 0,
-  pathColor = "gray",
   pathWidth = 2,
   pathOpacity = 0.2,
   gradientStartColor = "#ffaa40",

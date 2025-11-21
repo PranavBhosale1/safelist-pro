@@ -45,7 +45,7 @@ export function HorizontalFlow({
       const fromX = fromRect.left - containerRect.left + fromRect.width / 2;
       const fromY = fromRect.top - containerRect.top + fromRect.height / 2;
       const toX = toRect.left - containerRect.left + toRect.width / 2;
-      const toY = fromY; // Keep it horizontal
+     // Keep it horizontal
 
       const containerWidth = containerRect.width || 1000;
       const containerHeight = containerRect.height || 1000;

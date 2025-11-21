@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, DollarSign, Users, Building2, Star, ArrowUpRight, ArrowDownRight, Plus, Check, X, Search } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Users, Building2, Star, ArrowUpRight,  Plus, Check, X, Search } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/utils/cn';
@@ -45,6 +45,11 @@ type CompanyDetails = {
   newsInfo?: {
     totalArticles?: number;
     numberOfNewsArticlesLastYearDelta?: number;
+  };
+  // Optional freeform description field (used by mock data as { long: string })
+  description?: {
+    long?: string;
+    short?: string;
   };
 };
 

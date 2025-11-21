@@ -33,8 +33,6 @@ export default function ChatWindow({ chatId, doc_url, scriptId }: ChatWindowProp
     const date = new Date(timestamp);
     const now = new Date();
     const diffInMs = now.getTime() - date.getTime();
-    const diffInMinutes = Math.floor(diffInMs / 60000);
-    const diffInHours = Math.floor(diffInMs / 3600000);
     const diffInDays = Math.floor(diffInMs / 86400000);
 
     // Today - show time only

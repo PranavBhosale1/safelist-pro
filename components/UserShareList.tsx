@@ -53,6 +53,7 @@ export default function UserShareList({ userId, onAfterSell, className }: Props)
       const safeData = Array.isArray(json) ? json : json.data || [];
       setShares(safeData);
     } catch (error) {
+      console.error("Failed to fetch user shares:", error);
       setShares([]);
     }
   }, [userId]);

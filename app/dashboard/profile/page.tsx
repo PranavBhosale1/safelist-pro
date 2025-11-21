@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, User, Mail, Coins, Calendar } from 'lucide-react';
+import { ArrowLeft, User, Mail, Coins } from 'lucide-react';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();

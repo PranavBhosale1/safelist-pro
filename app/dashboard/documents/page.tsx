@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { PlusCircleIcon, Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import ScriptCard from "@/components/ScriptCard";
@@ -90,7 +89,7 @@ export default function SellSharesForm() {
     const [step, setStep] = useState(1);
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(0);
-    const [uploadProgress, setUploadProgress] = useState(0);
+   
     const [uploadDone, setUploadDone] = useState(false);
     const [formData, setFormData] = useState({
         companyName: "",
