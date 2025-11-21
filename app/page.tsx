@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion, LazyMotion, domAnimation, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, Shield, Zap, BarChart2, FileText, UserIcon, Menu, X, Lock, MessageSquare, TrendingUp, CheckCircle2, Star } from 'lucide-react';
+import { ArrowRight, Shield,  BarChart2, FileText, UserIcon, Menu, X, Lock, MessageSquare, TrendingUp, CheckCircle2, Star } from 'lucide-react';
 import { useRef, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -317,7 +317,7 @@ export default function HomePage() {
             {testimonials.map((testimonial, idx) => (
               <div key={idx} className="mx-8 flex items-center gap-4 px-8 py-4 bg-gradient-to-r from-green-50 to-white rounded-2xl border border-green-200 shadow-md">
                 <div className="flex-1">
-                  <p className="text-gray-700 font-medium">"{testimonial.text}"</p>
+                  <p className="text-gray-700 font-medium">&ldquo;{testimonial.text}&rdquo;</p>
                   <p className="text-sm text-gray-500 mt-1">— {testimonial.company}</p>
                 </div>
                 <Star className="w-5 h-5 text-green-600 fill-green-600" />
@@ -439,8 +439,8 @@ export default function HomePage() {
               </p>
             </motion.div>
 
-            <div className="relative w-full py-12 overflow-x-auto">
-              <div ref={containerRef} className="relative min-h-[500px] w-max px-4">
+            <div className="relative w-full py-12 flex justify-center">
+              <div ref={containerRef} className="relative min-h-[500px] w-full max-w-5xl px-4">
                 {/* Horizontal Flow Connectors */}
                 <div className="absolute inset-0">
                   {workflowRefs.slice(0, 6).map((ref, idx) => {
@@ -463,7 +463,7 @@ export default function HomePage() {
                 </div>
 
                 {/* Workflow Steps - Flowing left to right */}
-                <div className="relative z-10 flex flex-row items-center flex-nowrap gap-4 sm:gap-6 md:gap-8 lg:gap-10">
+                <div className="relative z-10 flex flex-row items-center flex-wrap justify-center mx-auto gap-3 sm:gap-4 md:gap-6 lg:gap-8">
                   {workflowSteps.map((step, idx) => (
                     <motion.div
                       key={idx}
@@ -472,7 +472,7 @@ export default function HomePage() {
                       whileInView={{ opacity: 1, scale: 1 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.5, delay: idx * 0.1 }}
-                      className="flex flex-col items-center text-center group flex-shrink-0 w-[100px] sm:w-[120px] md:w-[140px] lg:w-[160px]"
+                      className="flex flex-col items-center text-center group flex-shrink-0 w-[80px] sm:w-[100px] md:w-[110px] lg:w-[120px]"
                     >
                       <motion.div
                         whileHover={{ scale: 1.1, rotate: 5 }}
@@ -544,7 +544,7 @@ export default function HomePage() {
               <div>
                 <h4 className="font-bold text-white text-xl mb-4">SafeList</h4>
                 <p className="text-gray-400">
-                  Empowering transparent equity exchange for tomorrow's unicorns.
+                  Empowering transparent equity exchange for tomorrow&rsquo;s unicorns.
                 </p>
               </div>
               <div>
