@@ -231,6 +231,98 @@ export default function CompanyInfographic({
     }
   }, [trackedCompanies]);
 
+  // Load mock company data for dashboard display
+  useEffect(() => {
+    const loadMockCompanies = async () => {
+      if (trackedCompanies.length === 0) return;
+      
+      console.log("📦 Loading company data for dashboard...");
+      setLoading(true);
+      
+      try {
+        const { searchMockCompanies, getMockFundingRounds } = await import('@/lib/mockData/companies');
+        const fetchedCompanies: CompanyData[] = [];
+        
+        // Load data for tracked companies (use mock data as primary source)
+        for (const companyName of trackedCompanies.slice(0, 6)) { // Limit to 6 for performance
+          try {
+            // Search mock data by company name
+            const mockResults = searchMockCompanies(companyName);
+            
+            if (mockResults.length > 0) {
+              const mockCompany = mockResults[0];
+              const domain = mockCompany.domain;
+              
+              const companyData: CompanyData = {
+                company: {
+                  name: mockCompany.name,
+                  location: `${mockCompany.location.city || ''}${mockCompany.location.city && mockCompany.location.country ? ', ' : ''}${mockCompany.location.country}`.trim() || 'N/A',
+                  rating: mockCompany.rating,
+                  url: mockCompany.url,
+                  logo: mockCompany.logo,
+                  domain: mockCompany.domain,
+                },
+                details: {
+                  name: mockCompany.name,
+                  websiteInfo: { url: mockCompany.url },
+                  foundedYear: mockCompany.foundedYear,
+                  location: mockCompany.location,
+                  latestValuation: mockCompany.latestValuation,
+                  latestAnnualRevenue: mockCompany.latestAnnualRevenue,
+                  latestEmployeeCount: mockCompany.latestEmployeeCount,
+                  companyRatings: mockCompany.companyRatings,
+                  totalMoneyRaised: mockCompany.totalMoneyRaised,
+                  description: mockCompany.description ? { long: mockCompany.description } : undefined,
+                },
+                fundingRounds: getMockFundingRounds(domain),
+                status: 'loaded',
+              };
+              
+              fetchedCompanies.push(companyData);
+            } else {
+              // If not found in mock data, try API as fallback
+              try {
+                const searchRes = await fetch(`/api/traxcn_card?name=${encodeURIComponent(companyName)}`);
+                if (searchRes.ok) {
+                  const searchData = await searchRes.json();
+                  if (Array.isArray(searchData) && searchData.length > 0) {
+                    const companyInfo = searchData[0];
+                    if (companyInfo.url) {
+                      const domain = companyInfo.url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+                      const detailsRes = await fetch(`/api/traxcn_info?CompanyName=${encodeURIComponent(domain)}`);
+                      if (detailsRes.ok) {
+                        const detailsData = await detailsRes.json();
+                        const companyData: CompanyData = {
+                          company: companyInfo,
+                          details: detailsData?.results?.companyDetails?.result?.[0],
+                          fundingRounds: detailsData?.results?.fundingRounds?.result || [],
+                          status: 'loaded',
+                        };
+                        fetchedCompanies.push(companyData);
+                      }
+                    }
+                  }
+                }
+              } catch (apiError) {
+                console.warn(`API fallback failed for ${companyName}:`, apiError);
+              }
+            }
+          } catch (error) {
+            console.warn(`Failed to load data for ${companyName}:`, error);
+          }
+        }
+        
+        setCompanies(fetchedCompanies);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading companies:', error);
+        setLoading(false);
+      }
+    };
+    
+    loadMockCompanies();
+  }, [trackedCompanies]);
+
   // Fetch companies data with rate limiting
   // DISABLED: Active company tracking is disabled
   // useEffect(() => {

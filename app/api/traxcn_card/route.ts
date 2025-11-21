@@ -57,13 +57,77 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Check if we should use mock data (when Tracxn API is unavailable)
+    const useMockData = process.env.USE_MOCK_DATA === 'true' || !process.env.TRACXN_PLAYGROUND_TOKEN;
+    
+    if (useMockData) {
+      console.log("📦 Using mock data for company search...");
+      const { searchMockCompanies } = await import('@/lib/mockData/companies');
+      const mockCompanies = searchMockCompanies(companyName);
+      
+      if (mockCompanies.length === 0) {
+        return NextResponse.json({ error: "No company found." }, { status: 404 });
+      }
+      
+      // Convert mock data to API response format
+      const companyCards = mockCompanies.map((company) => ({
+        name: company.name,
+        location: `${company.location.city || ''}${company.location.city && company.location.country ? ', ' : ''}${company.location.country}`.trim() || 'N/A',
+        rating: company.rating,
+        url: company.url,
+        logo: company.logo,
+      }));
+      
+      return NextResponse.json(companyCards, {
+        status: 200,
+        headers: {
+          'X-RateLimit-Limit-Hourly': RATE_LIMITS[API_TYPE].hourly.toString(),
+          'X-RateLimit-Limit-Daily': RATE_LIMITS[API_TYPE].daily.toString(),
+          'X-RateLimit-Remaining-Hourly': rateLimitResult.remainingHourly.toString(),
+          'X-RateLimit-Remaining-Daily': rateLimitResult.remainingDaily.toString(),
+          'X-Data-Source': 'mock',
+        },
+      });
+    }
+
     // 1️⃣ Search for the company using shared function
     console.log("🔍 Searching company via Tracxn API...");
     const { searchCompanyByName } = await import('@/lib/traxcnApi');
     
     const searchTerm = companyName.trim();
-    const companies = await searchCompanyByName(searchTerm);
-    console.log("✅ Search result received:", companies.length, "matches");
+    let companies;
+    try {
+      companies = await searchCompanyByName(searchTerm);
+      console.log("✅ Search result received:", companies.length, "matches");
+    } catch (tracxnError) {
+      // Fallback to mock data if Tracxn API fails
+      console.warn("⚠️ Tracxn API failed, falling back to mock data:", tracxnError);
+      const { searchMockCompanies } = await import('@/lib/mockData/companies');
+      const mockCompanies = searchMockCompanies(companyName);
+      
+      if (mockCompanies.length === 0) {
+        return NextResponse.json({ error: "No company found." }, { status: 404 });
+      }
+      
+      const companyCards = mockCompanies.map((company) => ({
+        name: company.name,
+        location: `${company.location.city || ''}${company.location.city && company.location.country ? ', ' : ''}${company.location.country}`.trim() || 'N/A',
+        rating: company.rating,
+        url: company.url,
+        logo: company.logo,
+      }));
+      
+      return NextResponse.json(companyCards, {
+        status: 200,
+        headers: {
+          'X-RateLimit-Limit-Hourly': RATE_LIMITS[API_TYPE].hourly.toString(),
+          'X-RateLimit-Limit-Daily': RATE_LIMITS[API_TYPE].daily.toString(),
+          'X-RateLimit-Remaining-Hourly': rateLimitResult.remainingHourly.toString(),
+          'X-RateLimit-Remaining-Daily': rateLimitResult.remainingDaily.toString(),
+          'X-Data-Source': 'mock-fallback',
+        },
+      });
+    }
     
     if (!companies || companies.length === 0) {
       console.warn("🚫 No company found in search result");
@@ -162,6 +226,7 @@ export async function GET(req: NextRequest) {
         'X-RateLimit-Limit-Daily': RATE_LIMITS[API_TYPE].daily.toString(),
         'X-RateLimit-Remaining-Hourly': (rateLimitResult.remainingHourly - 1).toString(),
         'X-RateLimit-Remaining-Daily': (rateLimitResult.remainingDaily - 1).toString(),
+        'X-Data-Source': 'tracxn',
       },
     });
 

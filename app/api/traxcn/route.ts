@@ -59,12 +59,111 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Check if we should use mock data
+    const useMockData = process.env.USE_MOCK_DATA === 'true' || !process.env.TRACXN_PLAYGROUND_TOKEN;
+    
+    if (useMockData) {
+      console.log("📦 Using mock data...");
+      const { searchMockCompanies, getMockCompanyByDomain, getMockFundingRounds, getMockInvestors } = await import('@/lib/mockData/companies');
+      const mockCompanies = searchMockCompanies(companyName);
+      
+      if (mockCompanies.length === 0) {
+        return NextResponse.json({ error: "No company found." }, { status: 404 });
+      }
+      
+      const mockCompany = mockCompanies[0];
+      const normalizedDomain = mockCompany.domain;
+      
+      const results = {
+        companyDetails: {
+          result: [{
+            name: mockCompany.name,
+            websiteInfo: { url: mockCompany.url },
+            foundedYear: mockCompany.foundedYear,
+            location: mockCompany.location,
+            latestValuation: mockCompany.latestValuation,
+            latestAnnualRevenue: mockCompany.latestAnnualRevenue,
+            latestEmployeeCount: mockCompany.latestEmployeeCount,
+            companyRatings: mockCompany.companyRatings,
+            totalMoneyRaised: mockCompany.totalMoneyRaised,
+            description: mockCompany.description ? { long: mockCompany.description } : undefined,
+          }],
+        },
+        fundingRounds: {
+          result: getMockFundingRounds(normalizedDomain),
+        },
+        investors: {
+          result: getMockInvestors(normalizedDomain),
+        },
+      };
+      
+      return NextResponse.json({ source: 'mock', results }, {
+        status: 200,
+        headers: {
+          'X-RateLimit-Limit-Hourly': RATE_LIMITS[API_TYPE].hourly.toString(),
+          'X-RateLimit-Limit-Daily': RATE_LIMITS[API_TYPE].daily.toString(),
+          'X-RateLimit-Remaining-Hourly': rateLimitResult.remainingHourly.toString(),
+          'X-RateLimit-Remaining-Daily': rateLimitResult.remainingDaily.toString(),
+          'X-Data-Source': 'mock',
+        },
+      });
+    }
+
     // 1️⃣ Search for the company using shared function
     console.log("🔍 Searching company via Tracxn API...");
     const { searchCompanyByName, fetchCompanyInfo } = await import('@/lib/traxcnApi');
     
-    const companies = await searchCompanyByName(companyName);
-    console.log("✅ Search result received:", companies.length, "matches");
+    let companies;
+    try {
+      companies = await searchCompanyByName(companyName);
+      console.log("✅ Search result received:", companies.length, "matches");
+    } catch (tracxnError) {
+      // Fallback to mock data
+      console.warn("⚠️ Tracxn API failed, falling back to mock data:", tracxnError);
+      const { searchMockCompanies, getMockCompanyByDomain, getMockFundingRounds, getMockInvestors } = await import('@/lib/mockData/companies');
+      const mockCompanies = searchMockCompanies(companyName);
+      
+      if (mockCompanies.length === 0) {
+        return NextResponse.json({ error: "No company found." }, { status: 404 });
+      }
+      
+      const mockCompany = mockCompanies[0];
+      const normalizedDomain = mockCompany.domain;
+      
+      const results = {
+        companyDetails: {
+          result: [{
+            name: mockCompany.name,
+            websiteInfo: { url: mockCompany.url },
+            foundedYear: mockCompany.foundedYear,
+            location: mockCompany.location,
+            latestValuation: mockCompany.latestValuation,
+            latestAnnualRevenue: mockCompany.latestAnnualRevenue,
+            latestEmployeeCount: mockCompany.latestEmployeeCount,
+            companyRatings: mockCompany.companyRatings,
+            totalMoneyRaised: mockCompany.totalMoneyRaised,
+            description: mockCompany.description ? { long: mockCompany.description } : undefined,
+          }],
+        },
+        fundingRounds: {
+          result: getMockFundingRounds(normalizedDomain),
+        },
+        investors: {
+          result: getMockInvestors(normalizedDomain),
+        },
+      };
+      
+      return NextResponse.json({ source: 'mock-fallback', results }, {
+        status: 200,
+        headers: {
+          'X-RateLimit-Limit-Hourly': RATE_LIMITS[API_TYPE].hourly.toString(),
+          'X-RateLimit-Limit-Daily': RATE_LIMITS[API_TYPE].daily.toString(),
+          'X-RateLimit-Remaining-Hourly': rateLimitResult.remainingHourly.toString(),
+          'X-RateLimit-Remaining-Daily': rateLimitResult.remainingDaily.toString(),
+          'X-Data-Source': 'mock-fallback',
+        },
+      });
+    }
 
     if (!companies || companies.length === 0) {
       console.warn("🚫 No company found in search result");
@@ -83,7 +182,53 @@ export async function GET(req: NextRequest) {
 
     // 2️⃣ Fetch company info directly (using shared function)
     console.log("🌐 Fetching company info...");
-    const results = await fetchCompanyInfo(companyDomain);
+    let results;
+    try {
+      results = await fetchCompanyInfo(companyDomain);
+    } catch (tracxnError) {
+      // Fallback to mock data
+      console.warn("⚠️ Tracxn API failed, falling back to mock data:", tracxnError);
+      const { getMockCompanyByDomain, getMockFundingRounds, getMockInvestors } = await import('@/lib/mockData/companies');
+      const mockCompany = getMockCompanyByDomain(companyDomain);
+      
+      if (!mockCompany) {
+        throw new Error("Company not found in mock data.");
+      }
+      
+      results = {
+        companyDetails: {
+          result: [{
+            name: mockCompany.name,
+            websiteInfo: { url: mockCompany.url },
+            foundedYear: mockCompany.foundedYear,
+            location: mockCompany.location,
+            latestValuation: mockCompany.latestValuation,
+            latestAnnualRevenue: mockCompany.latestAnnualRevenue,
+            latestEmployeeCount: mockCompany.latestEmployeeCount,
+            companyRatings: mockCompany.companyRatings,
+            totalMoneyRaised: mockCompany.totalMoneyRaised,
+            description: mockCompany.description ? { long: mockCompany.description } : undefined,
+          }],
+        },
+        fundingRounds: {
+          result: getMockFundingRounds(companyDomain),
+        },
+        investors: {
+          result: getMockInvestors(companyDomain),
+        },
+      };
+      
+      return NextResponse.json({ source: 'mock-fallback', results }, {
+        status: 200,
+        headers: {
+          'X-RateLimit-Limit-Hourly': RATE_LIMITS[API_TYPE].hourly.toString(),
+          'X-RateLimit-Limit-Daily': RATE_LIMITS[API_TYPE].daily.toString(),
+          'X-RateLimit-Remaining-Hourly': rateLimitResult.remainingHourly.toString(),
+          'X-RateLimit-Remaining-Daily': rateLimitResult.remainingDaily.toString(),
+          'X-Data-Source': 'mock-fallback',
+        },
+      });
+    }
 
     console.log("✅ GET request successful");
     
@@ -98,6 +243,7 @@ export async function GET(req: NextRequest) {
         'X-RateLimit-Limit-Daily': RATE_LIMITS[API_TYPE].daily.toString(),
         'X-RateLimit-Remaining-Hourly': (rateLimitResult.remainingHourly - 1).toString(),
         'X-RateLimit-Remaining-Daily': (rateLimitResult.remainingDaily - 1).toString(),
+        'X-Data-Source': 'tracxn',
       },
     });
 

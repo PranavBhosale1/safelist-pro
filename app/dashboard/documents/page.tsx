@@ -14,7 +14,8 @@ import { createClient } from "@supabase/supabase-js";
 import { useSession } from "next-auth/react";
 import CompanySearchInput from "@/components/CompanySearchInput";
 import { encryptBufferBrowser } from "@/components/encryptHandler"; // Import your encryption function
-import {  useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 
 const supabase = createClient(
@@ -221,6 +222,12 @@ const handleUploadAndWatermark = async (file: File) => {
             console.log("Response:", data);
 
             if (res.ok) {
+                // Show success toast with admin review notice
+                toast.success("Document uploaded successfully!", {
+                    description: "Your listing has been submitted and will be reviewed by an admin. You'll be notified once it's approved.",
+                    duration: 5000,
+                });
+                
                 setOpen(false);
                 // Reset form data
                 setFormData({
@@ -241,11 +248,15 @@ const handleUploadAndWatermark = async (file: File) => {
                 window.location.reload();
             } else {
                 console.error("Upload failed:", data.error);
-                alert("Upload failed: " + (data.error || "Unknown error"));
+                toast.error("Upload failed", {
+                    description: data.error || "Unknown error occurred. Please try again.",
+                });
             }
         } catch (err) {
             console.error("Upload failed:", err);
-            alert("Upload failed: " + (err instanceof Error ? err.message : "Unknown error"));
+            toast.error("Upload failed", {
+                description: err instanceof Error ? err.message : "Unknown error occurred. Please try again.",
+            });
         } finally {
             setIsSubmitting(false);
             setUploading(0);
