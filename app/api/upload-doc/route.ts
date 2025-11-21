@@ -14,6 +14,11 @@ const supabase = createClient(
 // API handler
 export async function POST(req: Request) {
   try {
+    // Validate Supabase configuration
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.warn("⚠️ Supabase environment variables not configured");
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+    }
 
     const session = await getServerSession(authOptions);
 
@@ -42,7 +47,17 @@ export async function POST(req: Request) {
       });
 
     if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 500 });
+      const errorMessage = uploadError.message || String(uploadError);
+      // Check if it's a network/connection error
+      if (errorMessage.includes('fetch failed') || errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED')) {
+        console.error("Upload error: Supabase connection failed. Check your Supabase URL and network connection.", {
+          message: errorMessage,
+          hint: "Verify NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your .env file"
+        });
+        return NextResponse.json({ error: "Database connection failed" }, { status: 503 });
+      }
+      console.error("Upload error:", uploadError);
+      return NextResponse.json({ error: uploadError.message || "Failed to upload file" }, { status: 500 });
     }
 
     // Optional: Insert metadata into DB table `esop_docs`
@@ -62,6 +77,15 @@ export async function POST(req: Request) {
     });
 
     if (esopError) {
+      const errorMessage = esopError.message || String(esopError);
+      // Check if it's a network/connection error
+      if (errorMessage.includes('fetch failed') || errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED')) {
+        console.error("ESOP docs insert failed: Supabase connection failed. Check your Supabase URL and network connection.", {
+          message: errorMessage,
+          hint: "Verify NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your .env file"
+        });
+        return NextResponse.json({ error: "Database connection failed" }, { status: 503 });
+      }
       console.error("ESOP docs insert failed:", esopError.message);
       return NextResponse.json({ error: "Failed to save document metadata" }, { status: 500 });
     }
@@ -97,7 +121,19 @@ if (!quantity || quantity <= 0) throw new Error("Invalid quantity");
 
     return NextResponse.json({ success: true, path: data.path });
   } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    // Check if it's a network/connection error
+    if (errorMessage.includes('fetch failed') || errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED')) {
+      console.error("Upload error: Network error", {
+        message: errorMessage,
+        hint: "Check your Supabase URL and network connection"
+      });
+      return NextResponse.json({ error: "Database connection failed" }, { status: 503 });
+    }
     console.error("Upload error:", err);
-    return NextResponse.json({ error: "Unexpected server error" }, { status: 500 });
+    return NextResponse.json({ 
+      error: errorMessage || "Unexpected server error",
+      details: err instanceof Error ? err.stack : undefined
+    }, { status: 500 });
   }
 }

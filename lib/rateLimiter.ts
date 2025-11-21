@@ -46,6 +46,16 @@ export async function checkRateLimit(
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   try {
+    // Validate Supabase configuration
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.warn('⚠️ Supabase environment variables not configured. Rate limiting disabled.');
+      return {
+        allowed: true,
+        remainingHourly: config.hourly,
+        remainingDaily: config.daily,
+      };
+    }
+
     // Get all API calls for this user and API type in the last hour
     const { data: hourlyCalls, error: hourlyError } = await supabase
       .from('api_rate_limits')
@@ -56,7 +66,13 @@ export async function checkRateLimit(
       .order('created_at', { ascending: false });
 
     if (hourlyError) {
-      console.error('Error checking hourly rate limit:', hourlyError);
+      // Check if it's a network/connection error
+      const errorMessage = hourlyError.message || String(hourlyError);
+      if (errorMessage.includes('fetch failed') || errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED')) {
+        console.warn('⚠️ Supabase connection failed. Rate limiting disabled. Check your Supabase URL and network connection.');
+      } else {
+        console.error('Error checking hourly rate limit:', hourlyError);
+      }
       // On error, allow the request but log it
       return {
         allowed: true,
@@ -75,7 +91,13 @@ export async function checkRateLimit(
       .order('created_at', { ascending: false });
 
     if (dailyError) {
-      console.error('Error checking daily rate limit:', dailyError);
+      // Check if it's a network/connection error
+      const errorMessage = dailyError.message || String(dailyError);
+      if (errorMessage.includes('fetch failed') || errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED')) {
+        console.warn('⚠️ Supabase connection failed. Rate limiting disabled. Check your Supabase URL and network connection.');
+      } else {
+        console.error('Error checking daily rate limit:', dailyError);
+      }
       return {
         allowed: true,
         remainingHourly: config.hourly,
@@ -123,7 +145,13 @@ export async function checkRateLimit(
       remainingDaily,
     };
   } catch (error) {
-    console.error('Unexpected error in rate limit check:', error);
+    // Handle network errors specifically
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('fetch failed') || errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED')) {
+      console.warn('⚠️ Supabase connection failed. Rate limiting disabled. Check your Supabase URL and network connection.');
+    } else {
+      console.error('Unexpected error in rate limit check:', error);
+    }
     // On error, allow the request
     return {
       allowed: true,
@@ -143,6 +171,11 @@ export async function recordApiCall(
   apiType: ApiType
 ): Promise<void> {
   try {
+    // Skip if Supabase is not configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return; // Silently skip recording if Supabase is not configured
+    }
+
     const { error } = await supabase.from('api_rate_limits').insert({
       user_id: userId,
       api_type: apiType,
@@ -150,11 +183,19 @@ export async function recordApiCall(
     });
 
     if (error) {
-      console.error('Error recording API call:', error);
+      // Only log non-network errors to avoid spam
+      const errorMessage = error.message || String(error);
+      if (!errorMessage.includes('fetch failed') && !errorMessage.includes('ENOTFOUND') && !errorMessage.includes('ECONNREFUSED')) {
+        console.error('Error recording API call:', error);
+      }
       // Don't throw - we don't want to fail the request if recording fails
     }
   } catch (error) {
-    console.error('Unexpected error recording API call:', error);
+    // Only log non-network errors to avoid spam
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (!errorMessage.includes('fetch failed') && !errorMessage.includes('ENOTFOUND') && !errorMessage.includes('ECONNREFUSED')) {
+      console.error('Unexpected error recording API call:', error);
+    }
     // Don't throw - we don't want to fail the request if recording fails
   }
 }

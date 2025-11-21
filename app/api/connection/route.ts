@@ -26,6 +26,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid coinsToAdd' }, { status: 400 });
     }
 
+    // Validate Supabase configuration
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.warn("⚠️ Supabase environment variables not configured");
+      return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
+    }
+
     // lookup existing row
     const { data: existing, error: fetchError } = await supabase
       .from('connections')
@@ -34,6 +40,15 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (fetchError) {
+      const errorMessage = fetchError.message || String(fetchError);
+      // Check if it's a network/connection error
+      if (errorMessage.includes('fetch failed') || errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED')) {
+        console.error('Error fetching connections: Supabase connection failed. Check your Supabase URL and network connection.', {
+          message: errorMessage,
+          hint: "Verify NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your .env file"
+        });
+        return NextResponse.json({ error: 'Database connection failed' }, { status: 503 });
+      }
       console.error('Error fetching connections:', fetchError);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
@@ -69,9 +84,16 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, coins: inserted.coins });
   } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    if (errorMessage.includes('fetch failed') || errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED')) {
+      console.error('Unexpected error in /api/connection POST: Network error', {
+        message: errorMessage,
+        hint: "Check your Supabase URL and network connection"
+      });
+      return NextResponse.json({ error: 'Database connection failed' }, { status: 503 });
+    }
     console.error('Unexpected error in /api/connection POST', err);
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message || 'Unexpected error' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage || 'Unexpected error' }, { status: 500 });
   }
 }
 
@@ -86,6 +108,12 @@ export async function GET() {
 
     const userId = session.user.id as string;
 
+    // Validate Supabase configuration
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.warn("⚠️ Supabase environment variables not configured");
+      return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
+    }
+
     const { data, error } = await supabase
       .from('connections')
       .select('coins')
@@ -93,6 +121,15 @@ export async function GET() {
       .maybeSingle();
 
     if (error) {
+      const errorMessage = error.message || String(error);
+      // Check if it's a network/connection error
+      if (errorMessage.includes('fetch failed') || errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED')) {
+        console.error('Error reading connections balance: Supabase connection failed. Check your Supabase URL and network connection.', {
+          message: errorMessage,
+          hint: "Verify NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your .env file"
+        });
+        return NextResponse.json({ error: 'Database connection failed' }, { status: 503 });
+      }
       console.error('Error reading connections balance:', error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
@@ -100,8 +137,15 @@ export async function GET() {
     const coins = data?.coins ?? 0;
     return NextResponse.json({ success: true, coins });
   } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    if (errorMessage.includes('fetch failed') || errorMessage.includes('ENOTFOUND') || errorMessage.includes('ECONNREFUSED')) {
+      console.error('Unexpected error in /api/connection GET: Network error', {
+        message: errorMessage,
+        hint: "Check your Supabase URL and network connection"
+      });
+      return NextResponse.json({ error: 'Database connection failed' }, { status: 503 });
+    }
     console.error('Unexpected error in /api/connection GET', err);
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message || 'Unexpected error' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage || 'Unexpected error' }, { status: 500 });
   }
 }
