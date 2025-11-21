@@ -182,7 +182,7 @@ export default function CompanyInfographic({
             return;
           }
         } catch (e) {
-          // Invalid cache, continue with verification
+          console.error('Failed to parse verified companies cache:', e);
         }
       }
 
@@ -210,6 +210,7 @@ export default function CompanyInfographic({
           await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second delay between requests
         } catch (error) {
           console.log(`Company "${companyName}" not found in Tracxn`);
+          console.error('Verification error:', error);
           // Continue to next company
         }
       }

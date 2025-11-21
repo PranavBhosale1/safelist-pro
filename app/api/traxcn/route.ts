@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
     
     if (useMockData) {
       console.log("📦 Using mock data...");
-      const { searchMockCompanies, getMockCompanyByDomain, getMockFundingRounds, getMockInvestors } = await import('@/lib/mockData/companies');
+      const { searchMockCompanies, getMockFundingRounds, getMockInvestors } = await import('@/lib/mockData/companies');
       const mockCompanies = searchMockCompanies(companyName);
       
       if (mockCompanies.length === 0) {
@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
     } catch (tracxnError) {
       // Fallback to mock data
       console.warn("⚠️ Tracxn API failed, falling back to mock data:", tracxnError);
-      const { searchMockCompanies, getMockCompanyByDomain, getMockFundingRounds, getMockInvestors } = await import('@/lib/mockData/companies');
+      const { searchMockCompanies, getMockFundingRounds, getMockInvestors } = await import('@/lib/mockData/companies');
       const mockCompanies = searchMockCompanies(companyName);
       
       if (mockCompanies.length === 0) {

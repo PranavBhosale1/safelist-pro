@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/card";
 import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Dashboard() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
 
