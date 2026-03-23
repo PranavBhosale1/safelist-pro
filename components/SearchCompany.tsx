@@ -50,7 +50,7 @@ export default function SearchCompanyPage() {
         setError("Failed to fetch company. Please try again later.");
         setResults([]);
         setShowDropdown(true);
-      } finally {
+      } finally { 
         setLoading(false);
       }
     };
@@ -86,7 +86,6 @@ export default function SearchCompanyPage() {
         <div
           className="flex items-center flex-row-reverse"
           onMouseEnter={() => setIsOpen(true)}
-          onMouseLeave={() => { setIsOpen(false); setShowDropdown(false); }}
         >
           {!isOpen && (
             <motion.button
